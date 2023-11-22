@@ -39,10 +39,12 @@ const char *vertex_shader_text =
     "uniform mat4 model;"
     "uniform mat4 view;"
     "uniform mat4 projection;"
-    "layout (location = 0) in vec2 aPos;\n"
+    "layout (location = 0) in vec2 pos;\n"
+    "layout (location = 1) in float sz;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = projection * vec4(aPos, 0.0, 1.0);\n"
+    "   gl_Position = projection * vec4(pos, 0.0, 1.0);\n"
+    "   gl_PointSize = sz;\n"
     "}\n";
 
 const char *fragment_shader_text =
@@ -118,8 +120,6 @@ int main2() {
 
     glfwMakeContextCurrent(window);
 
-
- 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("Failed to initialize GLAD");
     // gladLoadGL();
@@ -132,6 +132,8 @@ int main2() {
     unsigned int shader_program = make_shader_program();
     glUseProgram(shader_program);
 
+    glEnable(GL_PROGRAM_POINT_SIZE);
+ 
 
     // Matrixes
     glm::mat4 projection = glm::mat4(1.0f);

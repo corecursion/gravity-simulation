@@ -25,8 +25,10 @@ using Particles = std::vector<Particle>;
 
 Particles init_particle_grid(size_t width, size_t height, size_t max_velocity, size_t step) {
     Particles ret;
-    Randomize rize(-max_velocity, +max_velocity);
     ret.reserve(((width*height)/step)/step);
+
+    Randomize rize1(-max_velocity, +max_velocity);
+    Randomize rize2(1, 3);
 
     // Particle p1;
     // p1.sx1=300.5F,
@@ -53,9 +55,9 @@ Particles init_particle_grid(size_t width, size_t height, size_t max_velocity, s
             Particle p;
             p.sx1=x+0.5F,
             p.sy1=y+0.5F,
-            p.vx=rize.get(),
-            p.vy=rize.get(),
-            p.r=0.5F,
+            p.vx=rize1.get(),
+            p.vy=rize1.get(),
+            p.r=rize2.get(),
             p.sx2=p.sx1,
             p.sy2=p.sy1;
             ret.push_back(p);
@@ -87,12 +89,13 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
             const float quadrance = std::max((xdistance*xdistance)+(ydistance*ydistance), 3.0F);    // Don't divide by anything too close to zero.
             const float distance = sqrt(quadrance);
 
-            const float& mass1 = p1.r;    // TODO
-            const float& mass2 = p2.r;    // TODO
+            // For simplicity, the mass is assumed to be proportional to the area of the particle. (A = pi*r^2)
+            const float& mass1 = glm::pi<float>()*p1.r*p1.r;
+            const float& mass2 = glm::pi<float>()*p2.r*p2.r;
 
             // glm::pi<float>()
             // quadrance = std::max(quadrance, 0.001F);    // Don't divide by anything too close to zero.
-            const float gforce = 1000.0F*(mass1*mass2)/quadrance;    // TODO
+            const float gforce = 100.0F*(mass1*mass2)/quadrance;    // TODO
             const float gacceleration1 = gforce/mass1;
             const float gacceleration2 = -(gforce/mass2);
             // std::cout << "    gacceleration1 " << gacceleration1 << std::endl;
@@ -133,8 +136,14 @@ void draw_particles(const Particles& particles, unsigned int shader_program) {
         // std::cout << "PARTICLE " << p.sx1 << "," << p.sy1 << std::endl;
         points.push_back(p.sx1);
         points.push_back(p.sy1);
-        // points.push_back(0.0);
+        points.push_back(p.r);
+        // points.push_back(2.0F);
     }
+    // points.push_back(400.0F);
+    // points.push_back(400.0F);
+    // points.push_back(10.0F);
+
+
     // for (size_t i = 0; i < points.size(); i += 2) {
     //     if (i <= points.size()-2)
     //         std::cout << "PARTICLE " << points[i] << "," << points[i+1] << std::endl;
@@ -158,13 +167,15 @@ void draw_particles(const Particles& particles, unsigned int shader_program) {
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
 
     // Configure the VAO and VBO.
     glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(GLfloat), &points[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)8);
     // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
 
     // Clean up the VAO and VBO.
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -177,6 +188,6 @@ void draw_particles(const Particles& particles, unsigned int shader_program) {
 
     glUseProgram(shader_program);
     glBindVertexArray(vao);
-    glDrawArrays(GL_POINTS, 0, points.size()/2);
+    glDrawArrays(GL_POINTS, 0, points.size()/3);
     // glDrawArrays(GL_POINTS, 0, points.size()/3);
 }
