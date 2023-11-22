@@ -43,8 +43,8 @@ const char *vertex_shader_text =
     "layout (location = 1) in float sz;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = projection * vec4(pos, 0.0, 1.0);\n"
-    "   gl_PointSize = sz;\n"
+    "    gl_Position = projection * vec4(pos, 0.0, 1.0);\n"
+    "    gl_PointSize = sz;\n"
     "}\n";
 
 const char *fragment_shader_text =
@@ -52,6 +52,8 @@ const char *fragment_shader_text =
     "out vec4 FragColor;\n"
     "void main()\n"
     "{\n"
+    "    vec2 coord = gl_PointCoord - vec2(0.5);\n"
+    "    if (length(coord) > 0.5) discard;\n"
     "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n";
 
@@ -133,7 +135,8 @@ int main2() {
     glUseProgram(shader_program);
 
     glEnable(GL_PROGRAM_POINT_SIZE);
- 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Matrixes
     glm::mat4 projection = glm::mat4(1.0f);
