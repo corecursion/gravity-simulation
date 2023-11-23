@@ -218,17 +218,18 @@ void draw_particles(const Particles& particles, unsigned int shader_program) {
     // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    // Clean up the VAO and VBO.
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     // // glColor4f(1.0F, 0.0F, 0.0F, 1.0F);
     // glDrawArrays(GL_POINTS, 0, points.size() / 3);
 
     glUseProgram(shader_program);
-    glBindVertexArray(vao);
     glDrawArrays(GL_POINTS, 0, points.size()/3);
     // glDrawArrays(GL_POINTS, 0, points.size()/3);
+
+    // Clean up the VAO and VBO.
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(0);
+    glDeleteBuffers(1, &vbo);
+    glDeleteVertexArrays(1, &vao);
 }
