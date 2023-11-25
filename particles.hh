@@ -12,14 +12,11 @@
 #include "randomize.hh"
 
 struct Particle {
-    float sx1 = 0.0F;        // x position
-    float sy1 = 0.0F;        // y position
-    float vx = 0.0F;         // x velocity
-    float vy = 0.0F;         // y velocity
-    float d = 1.0F;          // diameter
-    float sx2 = 0.0F;        // next x position
-    float sy2 = 0.0F;        // next y position
-    bool deleted = false;    // ignore this particle
+    glm::vec2 s1{0.0F, 0.0F};    // x and y position
+    glm::vec2 v{0.0F, 0.0F};     // x and y velocity
+    float d = 1.0F;              // diameter
+    glm::vec2 s2{0, 0};          // next x and y position
+    bool deleted = false;        // ignore this particle
 };    // struct Particle
 
 using Particles = std::vector<Particle>;
@@ -34,13 +31,10 @@ Particles init_particle_grid(size_t width, size_t height, size_t max_velocity, s
     for (size_t y = 0; y < height; y += step) {
         for (size_t x = 0; x < width; x += step) {
             Particle p;
-            p.sx1=x+0.5F,
-            p.sy1=y+0.5F,
-            p.vx=rize1.get(),
-            p.vy=rize1.get(),
+            p.s1 = glm::vec2(x+0.5F, y+0.5F),
+            p.v = glm::vec2(rize1.get(), rize1.get());
             p.d=rize2.get(),
-            p.sx2=p.sx1,
-            p.sy2=p.sy1;
+            p.s2=p.s1;
             p.deleted = false;
             ret.push_back(p);
         }
@@ -52,13 +46,13 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
     for (size_t i1 = 0; i1 < particles.size(); ++i1) {
         Particle& p1 = particles[i1];
         if (p1.deleted) continue;
-        float& p1sx1 = !flip ? p1.sx1 : p1.sx2;
-        float& p1sy1 = !flip ? p1.sy1 : p1.sy2;
+        float& p1sx1 = !flip ? p1.s1[0] : p1.s2[0];
+        float& p1sy1 = !flip ? p1.s1[1] : p1.s2[1];
         for (size_t i2 = i1+1; i2 < particles.size(); ++i2) {
             Particle& p2 = particles[i2];
             if (p2.deleted) continue;
-            float& p2sx1 = !flip ? p2.sx1 : p2.sx2;
-            float& p2sy1 = !flip ? p2.sy1 : p2.sy2;
+            float& p2sx1 = !flip ? p2.s1[0] : p2.s2[0];
+            float& p2sy1 = !flip ? p2.s1[1] : p2.s2[1];
 
             const float xdistance = p2sx1-p1sx1;
             const float ydistance = p2sy1-p1sy1;
@@ -71,6 +65,7 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
             // For simplicity, the mass is assumed to be proportional to the area of the particle. (A = pi*r^2)
             const float mass1 = glm::pi<float>()*r1*r1;
             const float mass2 = glm::pi<float>()*r2*r2;
+            // if (distance <= r1 || distance <= r2)
             if (r1+r2 >= distance) {
                 // Combine two particles that are colliding.
                 p2.deleted = true;
@@ -82,11 +77,10 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
                 p1sx1 += v[0];
                 p1sy1 += v[1];
                 // Calculate the weighted average of the velocities of the two particles.
-                glm::vec2 v1(p1.vx, p1.vy);
-                glm::vec2 v2(p2.vx, p2.vy);
+                glm::vec2 v1(p1.v);
+                glm::vec2 v2(p2.v);
                 glm::vec2 v3 = ((mass1*v1)+(mass2*v2))/(mass1+mass2);
-                p1.vx = v3[0];
-                p1.vy = v3[1];
+                p1.v = v3;
                 // Calculate the sum of the areas of the two particles.
                 p1.d = sqrt((mass1+mass2)/glm::pi<float>())*2.0F;
             } else {
@@ -100,10 +94,10 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
                 const float xacceleration2 = (gacceleration2*xdistance)/distance;
                 const float yacceleration2 = (gacceleration2*ydistance)/distance;
 
-                p1.vx += xacceleration1*delta;
-                p1.vy += yacceleration1*delta;
-                p2.vx += xacceleration2*delta;
-                p2.vy += yacceleration2*delta;
+                p1.v[0] += xacceleration1*delta;
+                p1.v[1] += yacceleration1*delta;
+                p2.v[0] += xacceleration2*delta;
+                p2.v[1] += yacceleration2*delta;
             }
         }
     }
@@ -112,12 +106,12 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
 void move_particles(Particles& particles, float delta, bool flip) {
     for (auto& p : particles) {
         if (p.deleted) continue;
-        float& sx1 = !flip ? p.sx1 : p.sx2;
-        float& sy1 = !flip ? p.sy1 : p.sy2;
-        float& sx2 = !flip ? p.sx2 : p.sx1;
-        float& sy2 = !flip ? p.sy2 : p.sy1;
-        sx2 = sx1 + (p.vx * delta);
-        sy2 = sy1 + (p.vy * delta);
+        float& sx1 = !flip ? p.s1[0] : p.s2[0];
+        float& sy1 = !flip ? p.s1[1] : p.s2[1];
+        float& sx2 = !flip ? p.s2[0] : p.s1[0];
+        float& sy2 = !flip ? p.s2[1] : p.s1[1];
+        sx2 = sx1 + (p.v[0] * delta);
+        sy2 = sy1 + (p.v[1] * delta);
     }
 }
 
@@ -126,8 +120,8 @@ void draw_particles(const Particles& particles, unsigned int shader_program) {
     points.reserve(particles.size()*sizeof(GLfloat)*2);
     for (const auto& p : particles) {
         if (p.deleted) continue;
-        points.push_back(p.sx1);
-        points.push_back(p.sy1);
+        points.push_back(p.s1[0]);
+        points.push_back(p.s1[1]);
         points.push_back(p.d);
     }
 
