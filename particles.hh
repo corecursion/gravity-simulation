@@ -12,11 +12,12 @@
 #include "randomize.hh"
 
 struct Particle {
-    glm::vec2 s1{0.0F, 0.0F};    // x and y position
-    glm::vec2 v{0.0F, 0.0F};     // x and y velocity
-    float d = 1.0F;              // diameter
-    glm::vec2 s2{0, 0};          // next x and y position
-    bool deleted = false;        // ignore this particle
+    glm::vec2 s1{0.0F, 0.0F};       // x and y position
+    glm::vec2 v{0.0F, 0.0F};        // x and y velocity
+    float d = 1.0F;                 // diameter
+    glm::vec2 s2{0, 0};             // next x and y position
+    glm::vec2 tempv{0.0F, 0.0F};    // temporary extra x and y velocity
+    bool deleted = false;           // ignore this particle
 };    // struct Particle
 
 using Particles = std::vector<Particle>;
@@ -46,46 +47,55 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
     for (size_t i1 = 0; i1 < particles.size(); ++i1) {
         Particle& p1 = particles[i1];
         if (p1.deleted) continue;
+        glm::vec2& p1s = !flip ? p1.s1 : p1.s2;
         float& p1sx1 = !flip ? p1.s1[0] : p1.s2[0];
         float& p1sy1 = !flip ? p1.s1[1] : p1.s2[1];
         for (size_t i2 = i1+1; i2 < particles.size(); ++i2) {
             Particle& p2 = particles[i2];
             if (p2.deleted) continue;
+            const glm::vec2& p2s = !flip ? p2.s1 : p2.s2;
             float& p2sx1 = !flip ? p2.s1[0] : p2.s2[0];
             float& p2sy1 = !flip ? p2.s1[1] : p2.s2[1];
 
             const float xdistance = p2sx1-p1sx1;
             const float ydistance = p2sy1-p1sy1;
-            const float quadrance = std::max((xdistance*xdistance)+(ydistance*ydistance), 3.0F);    // Don't divide by anything too close to zero.
+            const float quadrance = (xdistance*xdistance)+(ydistance*ydistance);
             const float distance = sqrt(quadrance);
 
             // Collision detection.
             float r1 = p1.d/2.0F;
             float r2 = p2.d/2.0F;
-            // For simplicity, the mass is assumed to be proportional to the area of the particle. (A = pi*r^2)
+            // For simplicity, the mass is assumed to equal the area of the particle. (A=pi*r^2)
             const float mass1 = glm::pi<float>()*r1*r1;
             const float mass2 = glm::pi<float>()*r2*r2;
-            // if (distance <= r1 || distance <= r2)
-            if (r1+r2 >= distance) {
-                // Combine two particles that are colliding.
-                p2.deleted = true;
-                // Calculate the weighted average of the positions of the two particles.
-                glm::vec2 v(p2sx1-p1sx1, p2sy1-p1sy1);
-                // Don't move the point more than the distance between the two points.
-                // (Could have happened if the center of one point fell inside the other point.)
-                v = glm::normalize(v)*std::min(p2.d/2.0F, distance);
-                p1sx1 += v[0];
-                p1sy1 += v[1];
+
+            if (distance <= r1+r2) {
+                // Two particles that are touching each other will move in the same direction.
+                // TODO: Note that a chain of touching particles won't sync up correctly.
                 // Calculate the weighted average of the velocities of the two particles.
-                glm::vec2 v1(p1.v);
-                glm::vec2 v2(p2.v);
-                glm::vec2 v3 = ((mass1*v1)+(mass2*v2))/(mass1+mass2);
-                p1.v = v3;
-                // Calculate the sum of the areas of the two particles.
-                p1.d = sqrt((mass1+mass2)/glm::pi<float>())*2.0F;
+                glm::vec2 v = ((mass1*p1.v)+(mass2*p2.v))/(mass1+mass2);
+                p1.v = p2.v = v;
+
+                if (distance <= (r1+r2)/2.0F) {
+                    // Combine two particles that are solidly colliding.
+                    p2.deleted = true;
+                    // Calculate the position of the combined particle.
+                    const float weight = 1.0F-(mass1/(mass1+mass2));
+                    p1s += weight*(p2s-p1s);
+                    // Calculate the sum of the areas of the two particles.
+                    p1.d = sqrt((mass1+mass2)/glm::pi<float>())*2.0F;
+                } else {
+                    // Quickly slide together two particles that are glancingly colliding.
+                    glm::vec2 slide = (p2s-p1s)*4.0F;
+                    const float weight1 = mass2/(mass1+mass2);
+                    const float weight2 = mass1/(mass1+mass2);
+                    p1.tempv = slide*weight1;
+                    p2.tempv = -(slide*weight2);
+                }
             } else {
                 // Apply the acceleration from the force felt between two particles.
-                const float gforce = 100.0F*(mass1*mass2)/quadrance;    // TODO
+                const float quadrance2 = std::max(quadrance, 3.0F);    // Don't divide by a number too close to zero.
+                const float gforce = 100.0F*(mass1*mass2)/quadrance2;    // TODO
                 const float gacceleration1 = gforce/mass1;
                 const float gacceleration2 = -(gforce/mass2);
 
@@ -110,8 +120,9 @@ void move_particles(Particles& particles, float delta, bool flip) {
         float& sy1 = !flip ? p.s1[1] : p.s2[1];
         float& sx2 = !flip ? p.s2[0] : p.s1[0];
         float& sy2 = !flip ? p.s2[1] : p.s1[1];
-        sx2 = sx1 + (p.v[0] * delta);
-        sy2 = sy1 + (p.v[1] * delta);
+        sx2 = sx1 + ((p.v[0]+p.tempv[0]) * delta);
+        sy2 = sy1 + ((p.v[1]+p.tempv[1]) * delta);
+        p.tempv = glm::vec2(0.0F, 0.0F);
     }
 }
 
