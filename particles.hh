@@ -11,6 +11,9 @@
 
 #include "randomize.hh"
 
+constexpr float GRAVITY = 25.0F;
+constexpr float SPIN = 15.0F;
+
 struct Particle {
     glm::vec2 s1{0.0F, 0.0F};       // x and y position
     glm::vec2 v{0.0F, 0.0F};        // x and y velocity
@@ -22,19 +25,32 @@ struct Particle {
 
 using Particles = std::vector<Particle>;
 
-Particles init_particle_grid(size_t width, size_t height, size_t max_velocity, size_t step) {
+Particles init_particle_grid(size_t width, size_t height, size_t radius, size_t max_velocity, size_t step) {
     Particles ret;
     ret.reserve(((width*height)/step)/step);
 
     Randomize rize1(-max_velocity, +max_velocity);
     Randomize rize2(1, 3);
 
+    glm::vec2 center((width/2.0F)+0.5F, (height/2.0F)+0.5F);
     for (size_t y = 0; y < height; y += step) {
         for (size_t x = 0; x < width; x += step) {
             Particle p;
-            p.s1 = glm::vec2(x+0.5F, y+0.5F),
-            p.v = glm::vec2(rize1.get(), rize1.get());
-            p.d=rize2.get(),
+            p.s1 = glm::vec2(x+0.5F, y+0.5F);
+            glm::vec2 dcenter = center-p.s1;
+            float len = glm::length(dcenter);
+            if (len > radius) continue;
+            if (dcenter[0] != 0.0F || dcenter[1] != 0.0F) {
+                auto ncenter = glm::normalize(dcenter);
+                p.v = glm::vec2(-ncenter[1], ncenter[0]);
+                p.v *= len/radius;
+                p.v *= SPIN;
+                p.v[0] += rize1.get();
+                p.v[1] += rize1.get();
+            } else {
+                p.v = glm::vec2(0.0F, 0.0F);
+            }
+            p.d=rize2.get();
             p.s2=p.s1;
             p.deleted = false;
             ret.push_back(p);
@@ -95,7 +111,7 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
             } else {
                 // Apply the acceleration from the force felt between two particles.
                 const float quadrance2 = std::max(quadrance, 3.0F);    // Don't divide by a number too close to zero.
-                const float gforce = 100.0F*(mass1*mass2)/quadrance2;    // TODO
+                const float gforce = GRAVITY*(mass1*mass2)/quadrance2;    // TODO
                 const float gacceleration1 = gforce/mass1;
                 const float gacceleration2 = -(gforce/mass2);
 

@@ -94,8 +94,8 @@ unsigned int make_shader_program() {
     return shader_program;
 }
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 800;
+const unsigned int SCR_WIDTH = 1500;
+const unsigned int SCR_HEIGHT = 1200;
 
 int main2() {
     // cuda_hello<<<1,1>>>();
@@ -143,7 +143,7 @@ int main2() {
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, &projection[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, &view[0][0]);
 
-    Particles particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*max_velocity=*/10, /*step=*/25);
+    Particles particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/250, /*max_velocity=*/10, /*step=*/14);
     std::cout << particles.size() << " particles" << std::endl;
     bool flip = false;
 
