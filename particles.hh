@@ -11,8 +11,8 @@
 
 #include "randomize.hh"
 
-constexpr float GRAVITY = 25.0F;
-constexpr float SPIN = 15.0F;
+constexpr float GRAVITY = 50.0F;
+constexpr float SPIN = 20.0F;
 
 struct Particle {
     glm::vec2 s1{0.0F, 0.0F};       // x and y position
@@ -25,16 +25,16 @@ struct Particle {
 
 using Particles = std::vector<Particle>;
 
-Particles init_particle_grid(size_t width, size_t height, size_t radius, size_t max_velocity, size_t step) {
+Particles init_particle_grid(size_t width, size_t height, int32_t radius, size_t max_velocity, size_t step) {
     Particles ret;
     ret.reserve(((width*height)/step)/step);
 
-    Randomize rize1(-max_velocity, +max_velocity);
-    Randomize rize2(1, 3);
+    Randomize rize1(-max_velocity, +max_velocity);    // particle velocities
+    Randomize rize2(1, 4);    // particle sizes
 
-    glm::vec2 center((width/2.0F)+0.5F, (height/2.0F)+0.5F);
-    for (size_t y = 0; y < height; y += step) {
-        for (size_t x = 0; x < width; x += step) {
+    glm::vec2 center(0.0F, 0.0F);
+    for (int32_t y = -radius; y < +radius; y += step) {
+        for (int32_t x = -radius; x < +radius; x += step) {
             Particle p;
             p.s1 = glm::vec2(x+0.5F, y+0.5F);
             glm::vec2 dcenter = center-p.s1;
@@ -64,17 +64,13 @@ void accelerate_particles(Particles& particles, float delta, bool flip) {
         Particle& p1 = particles[i1];
         if (p1.deleted) continue;
         glm::vec2& p1s = !flip ? p1.s1 : p1.s2;
-        float& p1sx1 = !flip ? p1.s1[0] : p1.s2[0];
-        float& p1sy1 = !flip ? p1.s1[1] : p1.s2[1];
         for (size_t i2 = i1+1; i2 < particles.size(); ++i2) {
             Particle& p2 = particles[i2];
             if (p2.deleted) continue;
             const glm::vec2& p2s = !flip ? p2.s1 : p2.s2;
-            float& p2sx1 = !flip ? p2.s1[0] : p2.s2[0];
-            float& p2sy1 = !flip ? p2.s1[1] : p2.s2[1];
 
-            const float xdistance = p2sx1-p1sx1;
-            const float ydistance = p2sy1-p1sy1;
+            const float xdistance = p2s[0]-p1s[0];
+            const float ydistance = p2s[1]-p1s[1];
             const float quadrance = (xdistance*xdistance)+(ydistance*ydistance);
             const float distance = sqrt(quadrance);
 
@@ -142,13 +138,14 @@ void move_particles(Particles& particles, float delta, bool flip) {
     }
 }
 
-void draw_particles(const Particles& particles, unsigned int shader_program) {
+void draw_particles(const Particles& particles, unsigned int shader_program, bool flip) {
     std::vector<GLfloat> points;
     points.reserve(particles.size()*sizeof(GLfloat)*2);
     for (const auto& p : particles) {
         if (p.deleted) continue;
-        points.push_back(p.s1[0]);
-        points.push_back(p.s1[1]);
+        const glm::vec2& s = !flip ? p.s1 : p.s2;
+        points.push_back(s[0]);
+        points.push_back(s[1]);
         points.push_back(p.d);
     }
 

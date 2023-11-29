@@ -41,20 +41,31 @@ const char *vertex_shader_text =
     "uniform mat4 projection;"
     "layout (location = 0) in vec2 pos;\n"
     "layout (location = 1) in float sz;\n"
+    "out vec4 starcolor;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = projection * vec4(pos, 0.0, 1.0);\n"
+    "    gl_Position = projection * view * model * vec4(pos, 0.0, 1.0);\n"
     "    gl_PointSize = sz;\n"
+    "    if (sz <= 3) starcolor = vec4(0.3f, 0.3f, 0.3f, 1.0f);\n"
+    "    else if (sz <= 10) starcolor = vec4(0.5f, 0.3f, 0.3f, 1.0f);\n"
+    "    else if (sz <= 25) starcolor = vec4(0.6f, 0.3f, 0.3f, 1.0f);\n"
+    "    else if (sz <= 45) starcolor = vec4(0.7f, 0.4f, 0.3f, 1.0f);\n"
+    "    else if (sz <= 75) starcolor = vec4(0.8f, 0.5f, 0.3f, 1.0f);\n"
+    "    else if (sz <= 100) starcolor = vec4(0.9f, 0.8f, 0.3f, 1.0f);\n"
+    "    else starcolor = vec4(1.0f, 1.0f, 0.3f, 1.0f);\n"
+    //"    starcolor = vec4(0.0f, 0.5f, 1.0f, 1.0f);\n"
     "}\n";
 
 const char *fragment_shader_text =
     "#version 330 core\n"
-    "out vec4 FragColor;\n"
+    "in vec4 starcolor;\n"
+    "out vec4 fragcolor;\n"
     "void main()\n"
     "{\n"
     "    vec2 coord = gl_PointCoord - vec2(0.5);\n"
     "    if (length(coord) > 0.5) discard;\n"
-    "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    //"    fragcolor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "    fragcolor = starcolor;\n"
     "}\n";
 
 unsigned int make_shader_program() {
@@ -136,14 +147,14 @@ int main2() {
 
     // Matrixes
     glm::mat4 projection = glm::mat4(1.0f);
-    glm::mat4 view = glm::mat4(1.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(static_cast<float>(SCR_WIDTH)/2.0F, static_cast<float>(SCR_HEIGHT)/2.0F, 0.0F));
     // projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
     projection = glm::ortho(0.0F, (float)SCR_WIDTH, 0.0F, (float)SCR_HEIGHT, -1.0F, +1.0F);
     // view       = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, &projection[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, &view[0][0]);
 
-    Particles particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/250, /*max_velocity=*/10, /*step=*/14);
+    Particles particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/1000, /*max_velocity=*/10, /*step=*/30);
     std::cout << particles.size() << " particles" << std::endl;
     bool flip = false;
 
@@ -170,7 +181,7 @@ int main2() {
         }
         accelerate_particles(particles, delta, flip);
         move_particles(particles, delta, flip);
-        draw_particles(particles, shader_program);
+        draw_particles(particles, shader_program, flip);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
