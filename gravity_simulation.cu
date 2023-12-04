@@ -154,9 +154,8 @@ int main2() {
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, &projection[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, &view[0][0]);
 
-    Particles particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/1000, /*max_velocity=*/10, /*step=*/30);
+    Particles particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/1000, /*max_velocity=*/10, /*step=*/20);
     std::cout << particles.size() << " particles" << std::endl;
-    bool flip = false;
 
     auto ts1 = std::chrono::system_clock::now();
     auto ts2 = ts1;
@@ -175,18 +174,17 @@ int main2() {
         ts2 = std::chrono::system_clock::now();
         double delta = std::chrono::duration<double>(ts2-ts1).count();
         if (delta == 0.0) throw std::runtime_error("zero time passed");
-        if (delta > 0.5) {
+        if (delta > 0.2) {
             std::cout << std::fixed << delta << "s hitch" << std::endl;
-            delta = 0.5;
+            delta = 0.2;
         }
-        accelerate_particles(particles, delta, flip);
-        move_particles(particles, delta, flip);
-        draw_particles(particles, shader_program, flip);
+        particles = accelerate_particles(particles, delta);
+        move_particles(particles, delta);
+        draw_particles(particles, shader_program);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        flip = !flip;
         ts1 = std::move(ts2);
     }
 
@@ -196,10 +194,12 @@ int main2() {
 
 int main() {
     try {
-        main2();
+        return main2();
     } catch(const std::exception& err) {
         std::cout << "EXCEPTION: " << err.what() << std::endl;
+        return 1;
     } catch(...) {
         std::cout << "UNKNOWN EXCEPTION" << std::endl;
+        return 2;
     }
 }
