@@ -27,8 +27,8 @@ using namespace std::literals;
 #include "particles.hh"
 #include "utility.hh"
 
-const unsigned int SCR_WIDTH = 1500;
-const unsigned int SCR_HEIGHT = 1200;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 static void error_callback(int error, const char* description)
 {
@@ -53,14 +53,15 @@ const char *vertex_shader_text =
     "{\n"
     "    gl_Position = projection * view * model * vec4(pos, 0.0, 1.0);\n"
     "    gl_PointSize = sz;\n"
-    "    if (sz <= 3) starcolor = vec4(0.3f, 0.3f, 0.3f, 1.0f);\n"
-    "    else if (sz <= 10) starcolor = vec4(0.5f, 0.3f, 0.3f, 1.0f);\n"
-    "    else if (sz <= 25) starcolor = vec4(0.6f, 0.3f, 0.3f, 1.0f);\n"
-    "    else if (sz <= 45) starcolor = vec4(0.7f, 0.4f, 0.3f, 1.0f);\n"
-    "    else if (sz <= 75) starcolor = vec4(0.8f, 0.5f, 0.3f, 1.0f);\n"
-    "    else if (sz <= 100) starcolor = vec4(0.9f, 0.8f, 0.3f, 1.0f);\n"
+    "    if (sz <= 5) starcolor = vec4(0.1f, 0.1f, 0.1f, 1.0f);\n"
+    "    else if (sz <= 15) starcolor = vec4(0.2f, 0.2f, 0.2f, 1.0f);\n"
+    "    else if (sz <= 25) starcolor = vec4(0.3f, 0.3f, 0.3f, 1.0f);\n"
+    "    else if (sz <= 35) starcolor = vec4(0.3f, 0.1f, 0.1f, 1.0f);\n"
+    "    else if (sz <= 45) starcolor = vec4(0.4f, 0.1f, 0.1f, 1.0f);\n"
+    "    else if (sz <= 55) starcolor = vec4(0.6f, 0.3f, 0.1f, 1.0f);\n"
+    "    else if (sz <= 75) starcolor = vec4(0.8f, 0.4f, 0.1f, 1.0f);\n"
+    "    else if (sz <= 100) starcolor = vec4(0.9f, 0.8f, 0.1f, 1.0f);\n"
     "    else starcolor = vec4(1.0f, 1.0f, 0.3f, 1.0f);\n"
-    //"    starcolor = vec4(0.0f, 0.5f, 1.0f, 1.0f);\n"
     "}\n";
 
 const char *fragment_shader_text =
@@ -71,7 +72,6 @@ const char *fragment_shader_text =
     "{\n"
     "    vec2 coord = gl_PointCoord - vec2(0.5);\n"
     "    if (length(coord) > 0.5) discard;\n"
-    //"    fragcolor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "    fragcolor = starcolor;\n"
     "}\n";
 
