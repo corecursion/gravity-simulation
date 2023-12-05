@@ -1,4 +1,5 @@
 // particles.hh
+// Copyright (C) 2023 by Shawn Yarbrough
 
 #pragma once
 

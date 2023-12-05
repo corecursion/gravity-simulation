@@ -1,4 +1,5 @@
 // gravity_simulation.cu
+// Copyright (C) 2023 by Shawn Yarbrough
 
 // #include <cstdio>
 // __global__ void cuda_hello(){
