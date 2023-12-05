@@ -12,6 +12,7 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include "csv_parser/csv_parser.h"
 
 #include "randomize.hh"
 
