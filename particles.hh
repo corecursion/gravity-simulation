@@ -18,7 +18,7 @@
 #include "randomize.hh"
 
 constexpr float GRAVITY = 50.0F;
-constexpr float SPIN = 20.0F;
+constexpr float SPIN = 37.0F;
 
 struct Particle {
     size_t id{std::numeric_limits<size_t>::max()};
