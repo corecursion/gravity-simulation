@@ -6,8 +6,8 @@
 #include <random>
 
 class Randomize {
-    size_t seed_value;
     std::random_device seed;
+    size_t seed_value;
     std::mt19937 gen;
     std::uniform_int_distribution<std::int64_t> dist;
 
