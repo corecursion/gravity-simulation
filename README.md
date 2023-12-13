@@ -8,6 +8,18 @@
 - Technologies: C++20, OpenGL. CUDA coming soon.
 
 
+## Building
+
+``` sh
+$ git clone --recurse-submodules https://github.com/corecursion/gravity-simulation.git
+$ cd gravity-simulation
+$ mkdir build
+$ cmake -B build
+$ cmake --build build
+$ build/gravity-simulation
+```
+
+
 ## Development
 
 Curious about how a solar system forms inside a nebula, I tried simulating the gravitational collapse of a rotating cloud of particles in space using C++20 code. The result was more chaotic than I expected.
