@@ -50,7 +50,7 @@ Nebulas are probably spinning as well. Adding rotation to the particle cloud mak
 
 ![spinning collapse of thousands of particles](media/spinning-collapse.gif)
 
-Now that collapse was chaotic, even violent. At the end, a binary star system formed like in Star Wars. It makes me happy.
+Now that collapse was chaotic, even violent. At the end, a binary star system formed like in Star Wars. I like it.
 
 Unfortunately all the planets were flung away. After many runs of the simulation, this appears to be common. Most of the material collapses into one, two, or occasionally three large stars, and everything else is lost in space.
 
@@ -68,7 +68,6 @@ Next steps: I suspect something called bombardment is involved with planetary fo
 
 ## To-Do
 
-- Cmake build configuration.
 - Command-line options.
 - Decouple the particle simulation from the graphical renderer.
 - Numerical Integration.
