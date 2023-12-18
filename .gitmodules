@@ -3,4 +3,4 @@
 	url = https://github.com/g-truc/glm.git
 [submodule "deps/csv-parser"]
 	path = deps/csv-parser
-	url = https://github.com/ashaduri/csv-parser.git
+	url = https://github.com/corecursion/csv-parser
