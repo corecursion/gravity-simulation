@@ -76,8 +76,8 @@ int main2(int argc, char* argv[]) {
     Particles particles;
     if (argc > 1) {
         particles = load_particles_from_csv(argv[1]);
-    } else if (particles.empty()) {
-        particles = init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/1000, /*max_velocity=*/10, /*step=*/20);
+    } else {
+        particles = Particle::init_particle_grid(SCR_WIDTH, SCR_HEIGHT, /*radius=*/1000, /*max_velocity=*/10, /*step=*/20);
     }
     std::cout << particles.size() << " particles" << std::endl;
 
@@ -94,9 +94,9 @@ int main2(int argc, char* argv[]) {
             std::cout << std::fixed << delta << "s hitch" << std::endl;
             delta = 0.2;
         }
-        particles = accelerate_particles(particles, delta);
-        move_particles(particles, delta);
-        draw_particles(particles, shader_program);
+        particles = Particle::accelerate_particles(particles, delta);
+        Particle::move_particles(particles, delta);
+        Particle::draw_particles(particles, shader_program);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

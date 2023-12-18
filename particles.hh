@@ -20,17 +20,41 @@
 constexpr float GRAVITY = 50.0F;
 constexpr float SPIN = 37.0F;
 
+using Collisions = std::unordered_map<size_t, std::unordered_set<size_t>>;
+
+struct Particle;
+using Particles = std::vector<Particle>;
+
 struct Particle {
     size_t id{std::numeric_limits<size_t>::max()};
     glm::vec2 position{0, 0};
     glm::vec2 velocity{0, 0};
     glm::vec2 temporary_velocity{0, 0};
     float diameter{1};
+    glm::vec4 color{1, 1, 1, 1};
+
+    static inline glm::vec4 choose_color_from_size(float sz);
+    static inline Particles init_particle_grid(size_t width, size_t height, int32_t radius, size_t max_velocity, size_t step);
+    static inline void accelerate_particle(const Particle& ip1, const Particle& ip2, Particle& op1, const Particle& op2, Collisions& collisions, float delta);
+    static inline Collisions accelerate_particle_block(const Particles& in_particles, Particles& out_particles, float delta, size_t block_size, size_t block_start);
+    static inline Particles accelerate_particles(const Particles& in_particles, float delta);
+    static inline void move_particles(Particles& particles, float delta);
+    static inline void draw_particles(const Particles& particles, unsigned int shader_program);
 };    // struct Particle
 
-using Particles = std::vector<Particle>;
+inline glm::vec4 Particle::choose_color_from_size(float sz) {
+    if (sz <= 5) return glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
+    else if (sz <= 15) return glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+    else if (sz <= 25) return glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
+    else if (sz <= 35) return glm::vec4(0.3f, 0.1f, 0.1f, 1.0f);
+    else if (sz <= 45) return glm::vec4(0.4f, 0.1f, 0.1f, 1.0f);
+    else if (sz <= 55) return glm::vec4(0.6f, 0.3f, 0.1f, 1.0f);
+    else if (sz <= 75) return glm::vec4(0.8f, 0.4f, 0.1f, 1.0f);
+    else if (sz <= 100) return glm::vec4(0.9f, 0.8f, 0.1f, 1.0f);
+    else return glm::vec4(1.0f, 1.0f, 0.3f, 1.0f);
+}
 
-Particles init_particle_grid(size_t width, size_t height, int32_t radius, size_t max_velocity, size_t step) {
+inline Particles Particle::init_particle_grid(size_t width, size_t height, int32_t radius, size_t max_velocity, size_t step) {
     Particles ret;
     ret.reserve(((width*height)/step)/step);
 
@@ -58,15 +82,14 @@ Particles init_particle_grid(size_t width, size_t height, int32_t radius, size_t
                 p.velocity = glm::vec2(0.0F, 0.0F);
             }
             p.diameter=rize2.get();
+            p.color = Particle::choose_color_from_size(p.diameter);
             ret.push_back(p);
         }
     }
     return ret;
 }
 
-using Collisions = std::unordered_map<size_t, std::unordered_set<size_t>>;
-
-inline void accelerate_particle(const Particle& ip1, const Particle& ip2, Particle& op1, const Particle& op2, Collisions& collisions, float delta) {
+inline void Particle::accelerate_particle(const Particle& ip1, const Particle& ip2, Particle& op1, const Particle& op2, Collisions& collisions, float delta) {
     const float xdistance = ip2.position[0]-ip1.position[0];
     const float ydistance = ip2.position[1]-ip1.position[1];
     const float quadrance = (xdistance*xdistance)+(ydistance*ydistance);
@@ -105,7 +128,7 @@ inline void accelerate_particle(const Particle& ip1, const Particle& ip2, Partic
     }
 }
 
-Collisions accelerate_particle_block(const Particles& in_particles, Particles& out_particles, float delta, size_t block_size, size_t block_start) {
+inline Collisions Particle::accelerate_particle_block(const Particles& in_particles, Particles& out_particles, float delta, size_t block_size, size_t block_start) {
     Collisions collisions;
     for (size_t i1 = block_start; i1 < block_start+block_size && i1 < in_particles.size() && i1 < out_particles.size(); ++i1) {
         const Particle& ip1 = in_particles[i1];
@@ -120,7 +143,7 @@ Collisions accelerate_particle_block(const Particles& in_particles, Particles& o
     return collisions;
 }
 
-Particles accelerate_particles(const Particles& in_particles, float delta) {
+inline Particles Particle::accelerate_particles(const Particles& in_particles, float delta) {
     // auto ts1 = std::chrono::system_clock::now();
     Particles out_particles;
     out_particles.reserve(in_particles.size());
@@ -197,6 +220,7 @@ Particles accelerate_particles(const Particles& in_particles, float delta) {
         op.position = position;
         op.velocity = velocity;
         op.diameter = sqrt(total_mass/glm::pi<float>())*2.0F;    // A=pi*r^2
+        op.color = Particle::choose_color_from_size(op.diameter);
     }
 
     // Remove any deleted particles and renumber the particle ID's.
@@ -219,7 +243,7 @@ Particles accelerate_particles(const Particles& in_particles, float delta) {
     return out_particles;
 }
 
-void move_particles(Particles& particles, float delta) {
+inline void Particle::move_particles(Particles& particles, float delta) {
     for (auto& p : particles) {
         p.position[0] += ((p.velocity[0]+p.temporary_velocity[0]) * delta);
         p.position[1] += ((p.velocity[1]+p.temporary_velocity[1]) * delta);
@@ -227,13 +251,18 @@ void move_particles(Particles& particles, float delta) {
     }
 }
 
-void draw_particles(const Particles& particles, unsigned int shader_program) {
-    std::vector<GLfloat> points;
-    points.reserve(particles.size()*sizeof(GLfloat)*2);
+inline void Particle::draw_particles(const Particles& particles, unsigned int shader_program) {
+    std::vector<GLfloat> memory;
+    constexpr size_t stride = 7;    // The number of floats pushed in the following loop.
+    memory.reserve(particles.size()*sizeof(GLfloat)*stride);
     for (const auto& p : particles) {
-        points.push_back(p.position[0]);
-        points.push_back(p.position[1]);
-        points.push_back(p.diameter);
+        memory.push_back(p.position[0]);
+        memory.push_back(p.position[1]);
+        memory.push_back(p.diameter);
+        memory.push_back(p.color[0]);
+        memory.push_back(p.color[1]);
+        memory.push_back(p.color[2]);
+        memory.push_back(p.color[3]);
     }
 
     // Vertex Array Object.
@@ -247,19 +276,22 @@ void draw_particles(const Particles& particles, unsigned int shader_program) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
 
     // Configure the VAO and VBO.
-    glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(GLfloat), &points[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)8);
+    glBufferData(GL_ARRAY_BUFFER, memory.size()*sizeof(GLfloat), &memory[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride*sizeof(GLfloat), (void*)(0*sizeof(GLfloat)));
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride*sizeof(GLfloat), (void*)(2*sizeof(GLfloat)));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride*sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
 
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(shader_program);
-    glDrawArrays(GL_POINTS, 0, points.size()/3);
+    glDrawArrays(GL_POINTS, 0, memory.size()/stride);
 
     // Clean up the VAO and VBO.
+    glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
     glDeleteBuffers(1, &vbo);
